@@ -1,0 +1,71 @@
+/* ══════════════════════════════════════════
+   DESIGN TOKENS
+══════════════════════════════════════════ */
+:root {
+  --cream: #faf8f5;
+  --cream2: #f3efe9;
+  --cream3: #ece6dc;
+  --stone: #e4ddd2;
+  --stone2: #d6cdc0;
+  --ink: #1e1b17;
+  --ink2: #3d3830;
+  --ink3: #6b6358;
+  --muted: #9e9488;
+  --faint: #c4bdb4;
+
+  --sage: #7a9e8e;
+  --sage-soft: #d6e8e0;
+  --sage-glow: #edf5f1;
+  --amber: #c4893a;
+  --amber-soft: #f0dfc0;
+  --amber-glow: #fdf5e8;
+  --rose: #b87070;
+  --rose-soft: #f0d8d8;
+  --rose-glow: #fdf0f0;
+  --lavender: #8878a8;
+  --lav-soft: #e0d8f0;
+  --lav-glow: #f4f0fb;
+
+  --ff-display: 'Playfair Display', Georgia, serif;
+  --ff-body: 'Figtree', system-ui, sans-serif;
+
+  --r8: 8px;
+  --r12: 12px;
+  --r16: 16px;
+  --r24: 24px;
+  --r32: 32px;
+
+  --sh-xs: 0 1px 4px rgba(30, 27, 23, 0.06);
+  --sh-sm: 0 2px 12px rgba(30, 27, 23, 0.08);
+  --sh-md: 0 6px 28px rgba(30, 27, 23, 0.10);
+  --sh-lg: 0 16px 56px rgba(30, 27, 23, 0.13);
+
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--ff-body);
+  background: var(--cream);
+  color: var(--ink);
+  overflow: hidden;
+}
+
+button {
+  font-family: var(--ff-body);
+  cursor: pointer;
+}
+
+input, select, textarea {
+  font-family: var(--ff-body);
+}
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: var(--stone2); border-radius: 3px; }
+::-webkit-scrollbar-track { background: transparent; }

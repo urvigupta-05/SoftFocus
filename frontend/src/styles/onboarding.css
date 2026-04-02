@@ -1,0 +1,210 @@
+/* ══════════════════════════════════════════
+   ONBOARDING
+══════════════════════════════════════════ */
+.onboard-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100vw;
+  background: var(--cream);
+}
+
+.onboard-wrap {
+  width: 100%;
+  max-width: 560px;
+  padding: 40px;
+}
+
+.onboard-progress {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 40px;
+}
+
+.op-dot {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--stone);
+  flex: 1;
+  transition: background 0.3s;
+}
+
+.op-dot.done { background: var(--amber); }
+.op-dot.active { background: var(--amber); opacity: 0.5; }
+
+.onboard-step {
+  animation: fadeUp 0.4s var(--ease);
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.onboard-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 12px;
+}
+
+.onboard-heading {
+  font-family: var(--ff-display);
+  font-size: 38px;
+  font-weight: 400;
+  line-height: 1.15;
+  margin-bottom: 8px;
+  color: var(--ink);
+}
+
+.onboard-heading em {
+  font-style: italic;
+  color: var(--amber);
+}
+
+.onboard-sub {
+  font-size: 15px;
+  color: var(--muted);
+  font-weight: 300;
+  line-height: 1.6;
+  margin-bottom: 36px;
+}
+
+/* Stepper */
+.stepper-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1.5px solid var(--stone);
+  border-radius: var(--r16);
+  padding: 18px 20px;
+  background: white;
+  margin-bottom: 12px;
+}
+
+.stepper-info { display: flex; flex-direction: column; gap: 3px; }
+
+.stepper-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.stepper-sub {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 300;
+}
+
+.stepper-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.step-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid var(--stone);
+  background: white;
+  font-size: 16px;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.step-btn:hover {
+  border-color: var(--amber);
+  background: var(--amber-glow);
+}
+
+.step-val {
+  font-family: var(--ff-display);
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--ink);
+  min-width: 36px;
+  text-align: center;
+}
+
+/* Option cards */
+.option-grid {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+
+.option-grid.cols2 { grid-template-columns: 1fr 1fr; }
+
+.option-card {
+  border: 1.5px solid var(--stone);
+  border-radius: var(--r16);
+  padding: 18px 20px;
+  cursor: pointer;
+  transition: all 0.22s var(--ease);
+  background: white;
+  text-align: left;
+}
+
+.option-card:hover {
+  border-color: var(--amber);
+  background: var(--amber-glow);
+}
+
+.option-card.selected {
+  border-color: var(--amber);
+  background: var(--amber-glow);
+  box-shadow: 0 0 0 3px var(--amber-soft);
+}
+
+.option-card-icon { font-size: 22px; margin-bottom: 8px; }
+.option-card-label { font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 3px; }
+.option-card-desc  { font-size: 12px; color: var(--muted); font-weight: 300; }
+
+/* Navigation */
+.onboard-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.btn-ghost {
+  background: none;
+  border: 1.5px solid var(--stone);
+  border-radius: var(--r12);
+  padding: 11px 24px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink3);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.btn-ghost:hover { border-color: var(--amber); color: var(--amber); }
+
+.btn-next {
+  background: var(--ink);
+  color: var(--cream);
+  border: none;
+  border-radius: var(--r12);
+  padding: 12px 28px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.25s var(--ease);
+  cursor: pointer;
+}
+
+.btn-next:hover {
+  background: var(--amber);
+  transform: translateY(-1px);
+  box-shadow: var(--sh-md);
+}
