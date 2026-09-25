@@ -152,8 +152,7 @@ function TimerCenter({ timer, isNight, sessionCount, dailyGoal, linkedTask, onCl
 
   // Dots — show up to 4 but respect dailyGoal
   const dotsCount = Math.max(4, dailyGoal);
-  const visibleDots = Math.min(dotsCount, 8); // cap display at 8
-
+  
   return (
     <div className="timer-center-wrap">
       <div className="timer-center">

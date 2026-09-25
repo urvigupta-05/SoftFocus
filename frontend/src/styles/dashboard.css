@@ -47,6 +47,13 @@
   color: var(--amber);
 }
 
+
+.fline
+{
+  display: flex;
+}
+
+
 /* Goal bar */
 .goal-bar-wrap {
   background: white;
@@ -54,9 +61,11 @@
   border-radius: var(--r24);
   padding: 20px 28px;
   margin-bottom: 24px;
+  margin-right: 16px;
   display: flex;
   align-items: center;
   gap: 20px;
+  flex: 0.5;
 }
 
 .goal-bar-label {
@@ -65,6 +74,7 @@
   color: var(--ink3);
   white-space: nowrap;
   flex-shrink: 0;
+  padding-bottom: 15px;
 }
 
 .goal-bar-track {
@@ -83,12 +93,14 @@
 }
 
 .goal-bar-count {
+
   font-family: var(--ff-display);
-  font-size: 20px;
+  font-size: 50px;
   font-weight: 400;
   color: var(--ink);
   white-space: nowrap;
   flex-shrink: 0;
+  paading: 7px;
 }
 
 .goal-edit-btn {
@@ -102,13 +114,40 @@
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
-  align-items: center;
+  align-items: right;
   gap: 5px;
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .goal-edit-btn:hover { border-color: var(--amber); color: var(--amber); }
+
+.quotebox
+{
+  background: white;
+  border: 1px solid var(--stone);
+  border-radius: var(--r24);
+  padding: 20px 28px;
+  margin-bottom: 24px;
+  display: inline-flex;
+  width: 500px;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  flex: 0.5;
+}
+
+.quote 
+{
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink3);
+  flex-shrink: 1;
+  padding: 7px;
+  font-display: flex;
+  text-align: center;
+}
+
 
 /* Stat grid */
 .dash-grid {

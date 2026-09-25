@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { useRain } from '../hooks/useRain';
 import '../styles/auth.css';
@@ -22,7 +22,7 @@ function FormInput({ id, label, type = 'text', placeholder, value, onChange, err
 }
 
 function LoginForm({ onSwitch }) {
-  const { login, showToast } = useApp();
+  const { login } = useApp();
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [errors,   setErrors]   = useState({});

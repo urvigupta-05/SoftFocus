@@ -300,3 +300,38 @@ export function useApp() {
   if (!ctx) throw new Error('useApp must be used within AppProvider');
   return ctx;
 }
+
+export function randomQuote()
+{
+  const quoteArr = 
+  [ 
+    '"There is no limit to what we, as women, can accomplish." — Michelle Obama',
+    '"No one can make you feel inferior without your consent." — Eleanor Roosevelt',
+    '"A girl should be two things: who and what she wants." — Coco Chanel',
+    `"Do not wait for someone else to come and speak for you. It's you who can change the world." — Malala Yousafzai`,
+    '"The most courageous act is still to think for yourself. Aloud." — Coco Chanel',
+    '"Life shrinks or expands in proportion to one’s courage." — Anaïs Nin',
+    '"Power is not given to you. You have to take it." — Beyoncé',
+    '"Your life isn’t yours if you constantly care what others think." — Unknown',
+    `"If you are always trying to be normal, you'll never know how amazing you can be." — Maya Angelou`,
+    '"I was made exactly the way I was meant to be made in who I am." — Megan Rapinoe',
+    '"Find out who you are and do it on purpose." — Dolly Parton',
+    '"Girls should never be afraid to be smart." — Emma Watson',
+    '"I never dreamed about success. I worked for it." — Estée Lauder',
+    '"Don\'t ever underestimate the importance you can have because history has shown us that courage can be contagious." — Michelle Obama',
+    '"You may encounter many defeats, but you must not be defeated." — Maya Angelou',
+    '"You get in life what you have the courage to ask for." — Oprah Winfrey',
+    '"The challenge is not to be perfect—it is to be whole." — Jane Fonda',
+    '"There is nothing stronger than a broken woman who has rebuilt herself." — Hannah Gadsby',
+    '"You are more powerful than you know; you are beautiful just as you are." — Melissa Etheridge',
+    '"The difference between successful people and others is how long they spend time feeling sorry for themselves." — Barbara Corcoran'
+
+  ];
+
+  const randomNum = Math.floor(Math.random() * quoteArr.length);
+
+  const randomQ = quoteArr[randomNum];
+
+  return randomQ;
+
+}

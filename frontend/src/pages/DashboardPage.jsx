@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState , useEffect} from 'react';
 import { useApp } from '../context/AppContext';
 import {
   getSessionsToday,
   getStreak,
   getWeeklyHours,
+  randomQuote,
 } from '../context/AppContext';
 import Heatmap from '../components/Heatmap';
 import '../styles/dashboard.css';
@@ -27,6 +28,54 @@ export default function DashboardPage({ onOpenGoals, onGoToTimer }) {
   const goalPct  = Math.min(100, Math.round((sessionCount / goals.daily) * 100));
   const todayStr = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
+  const [curQuote, setCurQuote] = useState(() => randomQuote());
+
+  function updateQ()
+  {
+    const newQ = randomQuote();
+
+    setCurQuote(newQ);
+
+    localStorage.setItem("dashQ",newQ);
+    localStorage.setItem("dashQtime", Date.now().toString());
+  }
+
+  useEffect(() => {
+
+    const oneHr = 60 * 60 * 1000;
+
+    const savedQ = localStorage.getItem("dashQ");
+    const savedQtime = localStorage.getItem("dashQtime");
+
+    const curTime = Date.now();
+
+    if( savedQ && savedQtime && (curTime-Number(savedQtime))<oneHr )
+    {
+      setCurQuote(savedQ);
+    }
+    else 
+    {
+      updateQ();
+    }
+
+    const interval = setInterval(() => {
+
+      const lastTime = Number(
+        localStorage.getItem("dashQtime")
+      );
+
+      if (Date.now() - lastTime >= oneHr) {
+        updateQ();
+      }
+
+    }, 1000);
+
+    return () => {
+        clearInterval(interval);
+    };
+
+    },[]);
+
   return (
     <div className="dash-page">
 
@@ -47,9 +96,11 @@ export default function DashboardPage({ onOpenGoals, onGoToTimer }) {
       </div>
 
       {/* Goal progress bar */}
+    <div className='fline'>
+
       <div className="goal-bar-wrap">
         <div className="goal-bar-label">
-          Today's goal — {sessionCount} / {goals.daily} sessions
+          Today's goal — {goals.daily} sessions
         </div>
         <div className="goal-bar-track">
           <div className="goal-bar-fill" style={{ width: `${goalPct}%` }} />
@@ -64,6 +115,13 @@ export default function DashboardPage({ onOpenGoals, onGoToTimer }) {
         </button>
       </div>
 
+      <div className="quotebox">
+        <div className="quote">
+          {curQuote}
+        </div>
+      </div>
+
+    </div>
       {/* Stat cards */}
       <div className="dash-grid">
         <div className="card">
