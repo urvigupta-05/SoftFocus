@@ -150,9 +150,7 @@ function TimerCenter({ timer, isNight, sessionCount, dailyGoal, linkedTask, onCl
   };
   const hint = hintMap[`${phase}_${isRunning ? 'running' : 'idle'}`];
 
-  // Dots — show up to 4 but respect dailyGoal
-  const dotsCount = Math.max(4, dailyGoal);
-  
+
   return (
     <div className="timer-center-wrap">
       <div className="timer-center">

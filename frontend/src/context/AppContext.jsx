@@ -29,7 +29,7 @@ async function apiFetch(path, options = {}) {
   });
 
   const data = await res.json();
-  if (!res.ok) throw { status: res.status, ...data };
+  if (!res.ok) throw new Error(data.message || 'API request failed');
   return data;
 }
 

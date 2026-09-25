@@ -13,7 +13,7 @@ const REMIND_OPTIONS = [
 const TOTAL_STEPS = 3;
 
 export default function OnboardingPage() {
-  const { user, completeOnboarding } = useApp();
+  const { completeOnboarding } = useApp();
 
   const [step,   setStep]   = useState(0);
   const [daily,  setDaily]  = useState(4);

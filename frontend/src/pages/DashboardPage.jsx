@@ -22,8 +22,8 @@ export default function DashboardPage({ onOpenGoals, onGoToTimer }) {
 
   const sessions     = useMemo(() => getSessionsToday(email), [email]);
   const sessionCount = sessions.length;
-  const streak       = useMemo(() => getStreak(email), [email, sessionCount]);
-  const weeklyHours  = useMemo(() => getWeeklyHours(email), [email, sessionCount]);
+  const streak       = useMemo(() => getStreak(email), [email]);
+  const weeklyHours  = useMemo(() => getWeeklyHours(email), [email]);
 
   const goalPct  = Math.min(100, Math.round((sessionCount / goals.daily) * 100));
   const todayStr = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
