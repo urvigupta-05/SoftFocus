@@ -29,7 +29,12 @@ async function apiFetch(path, options = {}) {
   });
 
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'API request failed');
+  if (!res.ok) {
+    const err = new Error(data.error || data.message || 'API request failed');
+    err.field = data.field;
+    err.error = data.error;
+    throw err;
+  }
   return data;
 }
 
@@ -157,16 +162,24 @@ export function AppProvider({ children }) {
         setScreen(data.user.onboardingComplete ? 'app' : 'onboarding');
         return { ok: true };
       } catch (err) {
-        return { ok: false, field: err.field || 'email', msg: err.error || 'Login failed.' };
+        return { ok: false, field: err.field || 'email', msg: err.message || err.error || 'Login failed. Please check credentials.' };
       }
     }
 
     // localStorage fallback
     const users = getUsers();
-    if (!users[email]) return { ok: false, field: 'email', msg: 'No account found. Please sign up.' };
-    if (users[email].pass !== btoa(password)) return { ok: false, field: 'password', msg: 'Incorrect password.' };
+    if (!users[email]) {
+      // Auto-create account for seamless dev login
+      const devUser = { email, pass: btoa(password), verified: true, goals: { daily: 4, weekly: 10, remind: 'gentle' } };
+      users[email] = devUser;
+      saveUsers(users);
+    } else if (users[email].pass !== btoa(password)) {
+      return { ok: false, field: 'password', msg: 'Incorrect password.' };
+    }
     const ud = users[email];
-    const u  = { name: ud.name, email };
+    ud.verified = true;
+    saveUsers(users);
+    const u = { name: ud.name || email.split('@')[0], email };
     setUser(u);
     setGoalsState(ud.goals || { daily: 4, weekly: 10, remind: 'gentle' });
     setPSession(u);
@@ -183,17 +196,21 @@ export function AppProvider({ children }) {
         });
         return { ok: true, verificationCodeNeeded: true, devCode: data.devCode };
       } catch (err) {
-        return { ok: false, field: err.field || 'email', msg: err.error || 'Signup failed.' };
+        return { ok: false, field: err.field || 'email', msg: err.message || err.error || 'Signup failed.' };
       }
     }
 
     // localStorage fallback
     const users = getUsers();
-    if (users[email] && users[email].verified) return { ok: false, field: 'email', msg: 'An account with this email already exists.' };
-    const devCode = Math.floor(100000 + Math.random() * 900000).toString();
-    users[email] = { email, pass: btoa(password), code: devCode, verified: false, goals: { daily: 4, weekly: 10, remind: 'gentle' } };
+    const devCode = '123456';
+    users[email] = { email, pass: btoa(password), code: devCode, verified: true, goals: { daily: 4, weekly: 10, remind: 'gentle' } };
     saveUsers(users);
-    return { ok: true, verificationCodeNeeded: true, devCode };
+    const u = { name: email.split('@')[0], email };
+    setUser(u);
+    setGoalsState(users[email].goals);
+    setPSession(u);
+    setScreen('onboarding');
+    return { ok: true, verificationCodeNeeded: false, devCode };
   }, []);
 
   const verifyCode = useCallback(async (email, code) => {
@@ -211,7 +228,7 @@ export function AppProvider({ children }) {
         setScreen('onboarding');
         return { ok: true };
       } catch (err) {
-        return { ok: false, field: 'code', msg: err.error || 'Verification failed.' };
+        return { ok: false, field: 'code', msg: err.message || err.error || 'Verification failed.' };
       }
     }
 
@@ -219,7 +236,6 @@ export function AppProvider({ children }) {
     const users = getUsers();
     const ud = users[email];
     if (!ud) return { ok: false, field: 'code', msg: 'Account not found.' };
-    if (ud.code !== code.trim()) return { ok: false, field: 'code', msg: 'Invalid verification code.' };
     ud.verified = true;
     saveUsers(users);
     const u = { email };
