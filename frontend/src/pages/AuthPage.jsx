@@ -5,7 +5,7 @@ import rainyRoomImg from '../assets/rainy_room.jpg';
 import '../styles/auth.css';
 
 export default function AuthPage() {
-  const { login, signup, verifyCode } = useApp();
+  const { login, signup, verifyCode, resendCode } = useApp();
   const [tab, setTab] = useState('login'); // 'login' | 'signup'
   
   // Login State
@@ -17,8 +17,10 @@ export default function AuthPage() {
   // Signup State
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPass, setSignupPass] = useState('');
+  const [signupConfirmPass, setSignupConfirmPass] = useState('');
   const [verifyStep, setVerifyStep] = useState(false);
   const [verifyCodeVal, setVerifyCodeVal] = useState('');
+  const [resendStatus, setResendStatus] = useState('');
 
   // Status & Errors
   const [errors, setErrors] = useState({});
@@ -48,8 +50,15 @@ export default function AuthPage() {
     const res = await login(loginEmail, loginPass);
     setLoading(false);
     if (!res.ok) {
-      if (res.field === 'email') setErrors({ email: res.msg });
-      else setErrors({ password: res.msg });
+      if (res.isUnverified) {
+        setSignupEmail(loginEmail);
+        setVerifyStep(true);
+        setErrors({ code: 'Your account is not verified yet. Please enter your verification code.' });
+      } else if (res.field === 'email') {
+        setErrors({ email: res.msg });
+      } else {
+        setErrors({ password: res.msg });
+      }
     }
   };
 
@@ -69,6 +78,9 @@ export default function AuthPage() {
     }
     if (!signupPass || signupPass.length < 6) {
       errs.password = 'Password must be at least 6 characters.';
+    }
+    if (signupPass !== signupConfirmPass) {
+      errs.confirmPassword = 'Passwords do not match.';
     }
     if (Object.keys(errs).length) {
       setErrors(errs);
@@ -101,6 +113,18 @@ export default function AuthPage() {
     if (!res.ok) {
       setErrors({ code: res.msg });
     }
+  };
+
+  // Handle Resend Verification Code
+  const handleResendOTP = async () => {
+    setResendStatus('Sending code...');
+    const res = await resendCode(signupEmail);
+    if (res.ok) {
+      setResendStatus('A new code was sent to your email!');
+    } else {
+      setResendStatus(res.msg || 'Failed to resend code.');
+    }
+    setTimeout(() => setResendStatus(''), 4000);
   };
 
   return (
@@ -137,6 +161,7 @@ export default function AuthPage() {
                     autoFocus
                   />
                   {errors.code && <span className="auth-error-msg">{errors.code}</span>}
+                  {resendStatus && <span className="auth-info-msg" style={{ color: '#c47c2b', fontSize: '13px', marginTop: '4px', display: 'block' }}>{resendStatus}</span>}
                 </div>
 
                 <button type="submit" className={`auth-submit-btn ${loading ? 'loading' : ''}`}>
@@ -144,8 +169,10 @@ export default function AuthPage() {
                 </button>
               </form>
 
-              <div className="auth-footer-note">
-                Entered wrong email?{' '}
+              <div className="auth-footer-note" style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px' }}>
+                <button type="button" className="auth-inline-link" onClick={handleResendOTP}>
+                  Resend code
+                </button>
                 <button type="button" className="auth-inline-link" onClick={() => { setVerifyStep(false); setVerifyCodeVal(''); }}>
                   Change email
                 </button>
@@ -312,6 +339,21 @@ export default function AuthPage() {
                       </button>
                     </div>
                     {errors.password && <span className="auth-error-msg">{errors.password}</span>}
+                  </div>
+
+                  <div className="auth-field-group">
+                    <label htmlFor="signup-confirm-pass">Confirm Password</label>
+                    <div className="auth-pass-wrapper">
+                      <input
+                        id="signup-confirm-pass"
+                        type={showPass ? 'text' : 'password'}
+                        className={`auth-input ${errors.confirmPassword ? 'has-error' : ''}`}
+                        placeholder="Re-enter password"
+                        value={signupConfirmPass}
+                        onChange={e => setSignupConfirmPass(e.target.value)}
+                      />
+                    </div>
+                    {errors.confirmPassword && <span className="auth-error-msg">{errors.confirmPassword}</span>}
                   </div>
 
                   <button type="submit" className={`auth-submit-btn ${loading ? 'loading' : ''}`}>

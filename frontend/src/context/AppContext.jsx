@@ -260,6 +260,21 @@ export function AppProvider({ children }) {
     return { ok: true };
   }, []);
 
+  const resendCode = useCallback(async (email) => {
+    if (USE_API) {
+      try {
+        const data = await apiFetch('/api/auth/resend-code', {
+          method: 'POST',
+          body: { email },
+        });
+        return { ok: true, msg: data.message };
+      } catch (err) {
+        return { ok: false, msg: err.message || err.error || 'Failed to resend code.' };
+      }
+    }
+    return { ok: true, msg: 'Verification code resent.' };
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem('pomo_jwt');
     clearPSession();
@@ -366,7 +381,7 @@ export function AppProvider({ children }) {
       user, goals,
       currentPage, setCurrentPage,
       toast, showToast,
-      login, signup, verifyCode, logout,
+      login, signup, verifyCode, resendCode, logout,
       saveGoals, updateProfile, completeOnboarding,
       recordSession,
     }}>

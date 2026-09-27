@@ -87,43 +87,49 @@ async function getOrCreateHeatmap(userId) {
 // AUTH ROUTES
 // ═════════════════════════════════════════════════════════════════════════════
 
-// POST /api/auth/signup - Step 1: Send verification code to Gmail
+// In-memory store for pending unverified signups (email -> { email, passwordHash, verificationCode, verificationCodeExpires })
+const pendingSignups = new Map();
+
+// POST /api/auth/signup - Step 1: Validate input, check existing user, send OTP (User not saved permanently yet)
 app.post('/api/auth/signup', async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return res.status(400).json({ field: 'email', error: 'Valid email is required.' });
+      return res.status(400).json({ field: 'email', error: 'Valid email address is required.' });
     }
     if (!password || password.length < 6) {
       return res.status(400).json({ field: 'password', error: 'Password must be at least 6 characters.' });
     }
 
     const existing = await User.findOne({ email: email.toLowerCase() });
-    if (existing && existing.isVerified) {
-      return res.status(409).json({ field: 'email', error: 'An account with this email already exists.' });
+    if (existing) {
+      if (existing.isVerified) {
+        return res.status(409).json({ field: 'email', error: 'An account with this email already exists. Please log in.' });
+      }
     }
 
-    // Generate 6-digit verification code
+    // Generate 6-digit verification code (OTP)
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
     const verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
 
     const saltRounds = 12;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
+    // Store in pending signups map (or update unverified record if exists)
+    pendingSignups.set(email.toLowerCase(), {
+      email: email.toLowerCase(),
+      passwordHash,
+      verificationCode,
+      verificationCodeExpires,
+    });
+
+    // Also update or soft-stage unverified doc for persistence across server restarts
     if (existing && !existing.isVerified) {
       existing.passwordHash = passwordHash;
       existing.verificationCode = verificationCode;
       existing.verificationCodeExpires = verificationCodeExpires;
       await existing.save();
-    } else {
-      await User.create({
-        email: email.toLowerCase(),
-        passwordHash,
-        isVerified: false,
-        verificationCode,
-        verificationCodeExpires,
-      });
     }
 
     // Send email via Gmail SMTP
@@ -145,7 +151,7 @@ app.post('/api/auth/signup', async (req, res) => {
       });
     } catch (mailErr) {
       console.error('❌ SMTP Mail send error:', mailErr);
-      return res.status(500).json({ field: 'email', error: `Failed to send email (${mailErr.message}). Check Gmail credentials.` });
+      return res.status(500).json({ field: 'email', error: `Failed to send verification email (${mailErr.message}).` });
     }
 
     res.status(200).json({
@@ -159,38 +165,109 @@ app.post('/api/auth/signup', async (req, res) => {
   }
 });
 
-// POST /api/auth/verify-code - Step 2: Confirm code and activate account
+// POST /api/auth/resend-code - Resend OTP verification code
+app.post('/api/auth/resend-code', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required.' });
+
+    const lowerEmail = email.toLowerCase();
+    let pending = pendingSignups.get(lowerEmail);
+    let existingUser = await User.findOne({ email: lowerEmail });
+
+    if (existingUser && existingUser.isVerified) {
+      return res.status(400).json({ error: 'Account is already verified. Please log in.' });
+    }
+
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+    if (pending) {
+      pending.verificationCode = verificationCode;
+      pending.verificationCodeExpires = verificationCodeExpires;
+    } else if (existingUser) {
+      existingUser.verificationCode = verificationCode;
+      existingUser.verificationCodeExpires = verificationCodeExpires;
+      await existingUser.save();
+    } else {
+      return res.status(404).json({ error: 'No pending registration found for this email. Please sign up.' });
+    }
+
+    // Send email
+    await transporter.sendMail({
+      from: `"SoftFocus Verification" <${process.env.GMAIL_USER}>`,
+      to: lowerEmail,
+      subject: 'New SoftFocus Verification Code ☕',
+      html: `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; border: 1px solid #e0d8cb; border-radius: 12px; background: #fffdfa;">
+          <h2 style="color: #2b251d; margin-bottom: 8px;">New Verification Code</h2>
+          <p style="color: #665d52; font-size: 14px;">Here is your requested verification code:</p>
+          <div style="text-align: center; margin: 24px 0;">
+            <span style="font-size: 32px; font-weight: 700; letter-spacing: 6px; color: #c47c2b; background: #f7efe2; padding: 12px 24px; border-radius: 8px; display: inline-block;">${verificationCode}</span>
+          </div>
+          <p style="color: #998e80; font-size: 12px; text-align: center;">This code will expire in 10 minutes.</p>
+        </div>
+      `,
+    });
+
+    res.json({ ok: true, message: 'New verification code sent.' });
+  } catch (err) {
+    console.error('Resend code error:', err);
+    res.status(500).json({ error: 'Failed to resend code.' });
+  }
+});
+
+// POST /api/auth/verify-code - Step 2: Confirm code, create account permanently & log in
 app.post('/api/auth/verify-code', async (req, res) => {
   try {
     const { email, code } = req.body;
 
     if (!email || !code) {
-      return res.status(400).json({ error: 'Email and verification code are required.' });
+      return res.status(400).json({ field: 'code', error: 'Email and verification code are required.' });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) {
-      return res.status(404).json({ error: 'Account not found.' });
+    const lowerEmail = email.toLowerCase();
+    let pending = pendingSignups.get(lowerEmail);
+    let user = await User.findOne({ email: lowerEmail });
+
+    const targetCode = pending ? pending.verificationCode : user?.verificationCode;
+    const targetExpires = pending ? pending.verificationCodeExpires : user?.verificationCodeExpires;
+    const passwordHash = pending ? pending.passwordHash : user?.passwordHash;
+
+    if (!targetCode && (!user || !user.isVerified)) {
+      return res.status(404).json({ field: 'code', error: 'No pending registration found for this email. Please sign up again.' });
     }
 
-    if (user.isVerified) {
+    if (user && user.isVerified) {
       const token = signToken(user);
       return res.json({ token, user });
     }
 
-    if (user.verificationCode !== code.trim()) {
+    if (targetCode !== code.trim()) {
       return res.status(400).json({ field: 'code', error: 'Invalid verification code.' });
     }
 
-    if (user.verificationCodeExpires && new Date() > user.verificationCodeExpires) {
-      return res.status(400).json({ field: 'code', error: 'Verification code has expired. Please sign up again.' });
+    if (targetExpires && new Date() > new Date(targetExpires)) {
+      return res.status(400).json({ field: 'code', error: 'Verification code has expired. Please request a new code.' });
     }
 
-    user.isVerified = true;
-    user.verificationCode = null;
-    user.verificationCodeExpires = null;
-    await user.save();
+    // Code is valid! Now create user account permanently in DB
+    if (!user) {
+      user = await User.create({
+        email: lowerEmail,
+        passwordHash,
+        isVerified: true,
+        verificationCode: null,
+        verificationCodeExpires: null,
+      });
+    } else {
+      user.isVerified = true;
+      user.verificationCode = null;
+      user.verificationCodeExpires = null;
+      await user.save();
+    }
 
+    pendingSignups.delete(lowerEmail);
     const token = signToken(user);
 
     res.json({
@@ -198,6 +275,7 @@ app.post('/api/auth/verify-code', async (req, res) => {
       user: {
         id:    user._id,
         email: user.email,
+        name:  user.name || user.email.split('@')[0],
         goals: user.goals,
         onboardingComplete: user.onboardingComplete,
       },
@@ -215,13 +293,25 @@ app.post('/api/auth/login', async (req, res) => {
 
     if (!email || !password) return res.status(400).json({ error: 'Email and password are required.' });
 
-    // Find user
     const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) return res.status(401).json({ field: 'email', error: 'No account found with this email.' });
+    if (!user) {
+      return res.status(401).json({ field: 'password', error: 'Invalid email or password.' });
+    }
 
     // Verify password
     const match = await bcrypt.compare(password, user.passwordHash);
-    if (!match) return res.status(401).json({ field: 'password', error: 'Incorrect password.' });
+    if (!match) {
+      return res.status(401).json({ field: 'password', error: 'Invalid email or password.' });
+    }
+
+    // Check email verification status
+    if (!user.isVerified) {
+      return res.status(403).json({
+        isUnverified: true,
+        field: 'email',
+        error: 'Your email address is not verified yet.',
+      });
+    }
 
     const token = signToken(user);
 
@@ -229,7 +319,7 @@ app.post('/api/auth/login', async (req, res) => {
       token,
       user: {
         id:    user._id,
-        name:  user.name,
+        name:  user.name || user.email.split('@')[0],
         email: user.email,
         goals: user.goals,
         onboardingComplete: user.onboardingComplete,
