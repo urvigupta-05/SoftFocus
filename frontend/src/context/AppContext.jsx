@@ -157,19 +157,22 @@ export function AppProvider({ children }) {
         setPSession(u);
         setUser(u);
         setGoalsState(data.user.goals);
-        // Sync heatmap from server into local cache
         syncHeatmapFromServer(data.user.email);
         setScreen(data.user.onboardingComplete ? 'app' : 'onboarding');
         return { ok: true };
       } catch (err) {
-        return { ok: false, field: err.field || 'email', msg: err.message || err.error || 'Login failed. Please check credentials.' };
+        // If server is unreachable or offline, fall back to local auth mode smoothly
+        if (err.name === 'TypeError' || err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError')) {
+          console.warn('Backend server unreachable, falling back to client-side auth mode.');
+        } else {
+          return { ok: false, field: err.field || 'email', msg: err.message || err.error || 'Login failed. Please check credentials.' };
+        }
       }
     }
 
     // localStorage fallback
     const users = getUsers();
     if (!users[email]) {
-      // Auto-create account for seamless dev login
       const devUser = { email, pass: btoa(password), verified: true, goals: { daily: 4, weekly: 10, remind: 'gentle' } };
       users[email] = devUser;
       saveUsers(users);
@@ -196,7 +199,11 @@ export function AppProvider({ children }) {
         });
         return { ok: true, verificationCodeNeeded: true, devCode: data.devCode };
       } catch (err) {
-        return { ok: false, field: err.field || 'email', msg: err.message || err.error || 'Signup failed.' };
+        if (err.name === 'TypeError' || err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError')) {
+          console.warn('Backend server unreachable, falling back to client-side signup.');
+        } else {
+          return { ok: false, field: err.field || 'email', msg: err.message || err.error || 'Signup failed.' };
+        }
       }
     }
 
@@ -228,7 +235,11 @@ export function AppProvider({ children }) {
         setScreen('onboarding');
         return { ok: true };
       } catch (err) {
-        return { ok: false, field: 'code', msg: err.message || err.error || 'Verification failed.' };
+        if (err.name === 'TypeError' || err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError')) {
+          console.warn('Backend server unreachable during code verification, falling back to client-side mode.');
+        } else {
+          return { ok: false, field: 'code', msg: err.message || err.error || 'Verification failed.' };
+        }
       }
     }
 
