@@ -2,15 +2,15 @@ const mongoose = require('mongoose');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // USER
-// Stores account info: name, email, hashed password, and focus goals.
+// Stores account info: name, email, hashed password, verification status, and focus goals.
 // ─────────────────────────────────────────────────────────────────────────────
 const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, 'Name is required'],
       trim: true,
       maxlength: 80,
+      default: '',
     },
     email: {
       type: String,
@@ -20,10 +20,21 @@ const userSchema = new mongoose.Schema(
       trim: true,
       match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email address'],
     },
-    // bcrypt hash — never store plain text
     passwordHash: {
       type: String,
       required: true,
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verificationCode: {
+      type: String,
+      default: null,
+    },
+    verificationCodeExpires: {
+      type: Date,
+      default: null,
     },
     goals: {
       daily:  { type: Number, default: 4,       min: 1, max: 12 },
@@ -37,8 +48,6 @@ const userSchema = new mongoose.Schema(
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SESSION
-// One document per completed focus session.
-// dateKey: 'YYYY-MM-DD' string for efficient daily grouping.
 // ─────────────────────────────────────────────────────────────────────────────
 const sessionSchema = new mongoose.Schema(
   {
@@ -48,7 +57,6 @@ const sessionSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    // ISO date string of the day this session belongs to: '2025-06-15'
     dateKey: {
       type: String,
       required: true,
@@ -58,7 +66,6 @@ const sessionSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
-    // optional: session duration in minutes (default 25)
     durationMinutes: {
       type: Number,
       default: 25,
@@ -67,13 +74,10 @@ const sessionSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Compound index for fast per-user per-day lookups
 sessionSchema.index({ user: 1, dateKey: 1 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STREAK / HEATMAP
-// One document per user stores a map of date → session count.
-// Kept as a single document so heatmap reads are O(1).
 // ─────────────────────────────────────────────────────────────────────────────
 const heatmapSchema = new mongoose.Schema(
   {
@@ -81,15 +85,13 @@ const heatmapSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-      unique: true, // one heatmap doc per user
+      unique: true,
     },
-    // { '2025-06-15': 3, '2025-06-16': 1, ... }
     data: {
       type: Map,
       of: Number,
       default: {},
     },
-    // Cached streak count — updated on every session add
     currentStreak: { type: Number, default: 0 },
   },
   { timestamps: true }

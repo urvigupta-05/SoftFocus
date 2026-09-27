@@ -174,20 +174,14 @@ export function AppProvider({ children }) {
     return { ok: true };
   }, []);
 
-  const signup = useCallback(async (name, email, password) => {
+  const signup = useCallback(async (email, password) => {
     if (USE_API) {
       try {
         const data = await apiFetch('/api/auth/signup', {
           method: 'POST',
-          body: { name, email, password },
+          body: { email, password },
         });
-        localStorage.setItem('pomo_jwt', data.token);
-        const u = { name: data.user.name, email: data.user.email, goals: data.user.goals };
-        setPSession(u);
-        setUser(u);
-        setGoalsState(data.user.goals);
-        setScreen('onboarding');
-        return { ok: true };
+        return { ok: true, verificationCodeNeeded: true, devCode: data.devCode };
       } catch (err) {
         return { ok: false, field: err.field || 'email', msg: err.error || 'Signup failed.' };
       }
@@ -195,12 +189,42 @@ export function AppProvider({ children }) {
 
     // localStorage fallback
     const users = getUsers();
-    if (users[email]) return { ok: false, field: 'email', msg: 'An account with this email already exists.' };
-    users[email] = { name, pass: btoa(password), goals: { daily: 4, weekly: 10, remind: 'gentle' } };
+    if (users[email] && users[email].verified) return { ok: false, field: 'email', msg: 'An account with this email already exists.' };
+    const devCode = Math.floor(100000 + Math.random() * 900000).toString();
+    users[email] = { email, pass: btoa(password), code: devCode, verified: false, goals: { daily: 4, weekly: 10, remind: 'gentle' } };
     saveUsers(users);
-    const u = { name, email };
+    return { ok: true, verificationCodeNeeded: true, devCode };
+  }, []);
+
+  const verifyCode = useCallback(async (email, code) => {
+    if (USE_API) {
+      try {
+        const data = await apiFetch('/api/auth/verify-code', {
+          method: 'POST',
+          body: { email, code },
+        });
+        localStorage.setItem('pomo_jwt', data.token);
+        const u = { email: data.user.email, goals: data.user.goals };
+        setPSession(u);
+        setUser(u);
+        setGoalsState(data.user.goals || { daily: 4, weekly: 10, remind: 'gentle' });
+        setScreen('onboarding');
+        return { ok: true };
+      } catch (err) {
+        return { ok: false, field: 'code', msg: err.error || 'Verification failed.' };
+      }
+    }
+
+    // localStorage fallback
+    const users = getUsers();
+    const ud = users[email];
+    if (!ud) return { ok: false, field: 'code', msg: 'Account not found.' };
+    if (ud.code !== code.trim()) return { ok: false, field: 'code', msg: 'Invalid verification code.' };
+    ud.verified = true;
+    saveUsers(users);
+    const u = { email };
     setUser(u);
-    setGoalsState({ daily: 4, weekly: 10, remind: 'gentle' });
+    setGoalsState(ud.goals || { daily: 4, weekly: 10, remind: 'gentle' });
     setPSession(u);
     setScreen('onboarding');
     return { ok: true };
@@ -280,14 +304,40 @@ export function AppProvider({ children }) {
     }
   }, []);
 
+  // ── PROFILE UPDATE ──────────────────────────────────────────────────────────
+
+  const updateProfile = useCallback(async (profileFields) => {
+    setUser((prev) => {
+      const updated = { ...prev, ...profileFields };
+      setPSession(updated);
+      if (!USE_API && prev?.email) {
+        const users = getUsers();
+        if (users[prev.email]) {
+          users[prev.email] = { ...users[prev.email], ...profileFields };
+          saveUsers(users);
+        }
+      }
+      return updated;
+    });
+
+    if (USE_API) {
+      try {
+        await apiFetch('/api/users/profile', { method: 'PUT', body: profileFields });
+      } catch (e) {
+        console.warn('Profile API update failed:', e);
+      }
+    }
+    showToast('Profile updated! ✨');
+  }, [showToast]);
+
   return (
     <AppContext.Provider value={{
       screen, setScreen,
       user, goals,
       currentPage, setCurrentPage,
       toast, showToast,
-      login, signup, logout,
-      saveGoals, completeOnboarding,
+      login, signup, verifyCode, logout,
+      saveGoals, updateProfile, completeOnboarding,
       recordSession,
     }}>
       {children}

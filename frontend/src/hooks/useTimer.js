@@ -2,33 +2,45 @@
  * useTimer.js
  *
  * Calls `recordSession` (from AppContext) instead of `addSessionToday` directly.
- * recordSession handles both localStorage and API persistence.
+ * Supports customizable preset durations (25/5, 45/15, 50/10).
  */
 import { useState, useRef, useCallback, useEffect } from 'react';
 
-export const FOCUS_SECS      = 25 * 60;
-export const BREAK_SECS      = 5  * 60;
-export const LONG_BREAK_SECS = 10 * 60;
-export const RING_CIRC       = 2 * Math.PI * 140; // r=140
+export const RING_CIRC = 2 * Math.PI * 140; // r=140
 
 function pad(n) { return String(n).padStart(2, '0'); }
 export function formatTime(s) { return `${pad(Math.floor(s / 60))}:${pad(s % 60)}`; }
 
 export function useTimer({ userEmail, goals, onSessionComplete, recordSession }) {
-  const [seconds,   setSeconds]   = useState(FOCUS_SECS);
+  const [preset, setPresetState]  = useState('25-5'); // '25-5' | '45-15' | '50-10'
+  const [focusSecs, setFocusSecs] = useState(25 * 60);
+  const [breakSecs, setBreakSecs] = useState(5 * 60);
+
+  const [seconds,   setSeconds]   = useState(25 * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [phase,     setPhase]     = useState('focus'); // 'focus' | 'break'
   const intervalRef = useRef(null);
 
-  const breakDuration = goals?.remind === 'long' ? LONG_BREAK_SECS : BREAK_SECS;
-  const totalSeconds  = phase === 'focus' ? FOCUS_SECS : breakDuration;
-  const progress      = 1 - seconds / totalSeconds;
-  const ringOffset    = RING_CIRC * (1 - progress);
+  const totalSeconds = phase === 'focus' ? focusSecs : breakSecs;
+  const progress     = 1 - seconds / totalSeconds;
+  const ringOffset   = RING_CIRC * (1 - progress);
 
   const stop = useCallback(() => {
     clearInterval(intervalRef.current);
     setIsRunning(false);
   }, []);
+
+  const setPreset = useCallback((presetKey) => {
+    stop();
+    setPresetState(presetKey);
+    let f = 25 * 60, b = 5 * 60;
+    if (presetKey === '45-15') { f = 45 * 60; b = 15 * 60; }
+    else if (presetKey === '50-10') { f = 50 * 60; b = 10 * 60; }
+    setFocusSecs(f);
+    setBreakSecs(b);
+    setPhase('focus');
+    setSeconds(f);
+  }, [stop]);
 
   const start = useCallback(() => { setIsRunning(true); }, []);
   const pause = useCallback(() => { stop(); }, [stop]);
@@ -36,17 +48,17 @@ export function useTimer({ userEmail, goals, onSessionComplete, recordSession })
   const reset = useCallback(() => {
     stop();
     setPhase('focus');
-    setSeconds(FOCUS_SECS);
-  }, [stop]);
+    setSeconds(focusSecs);
+  }, [stop, focusSecs]);
 
   const skip = useCallback(() => {
     stop();
     setPhase(p => {
       const next = p === 'focus' ? 'break' : 'focus';
-      setSeconds(next === 'focus' ? FOCUS_SECS : breakDuration);
+      setSeconds(next === 'focus' ? focusSecs : breakSecs);
       return next;
     });
-  }, [stop, breakDuration]);
+  }, [stop, focusSecs, breakSecs]);
 
   useEffect(() => {
     if (!isRunning) return;
@@ -56,17 +68,16 @@ export function useTimer({ userEmail, goals, onSessionComplete, recordSession })
           clearInterval(intervalRef.current);
           setIsRunning(false);
           if (phase === 'focus') {
-            // Record the session (API + localStorage)
             if (userEmail && recordSession) recordSession(userEmail);
             onSessionComplete?.();
             setTimeout(() => {
               setPhase('break');
-              setSeconds(breakDuration);
+              setSeconds(breakSecs);
               if (goals?.remind === 'gentle') setIsRunning(true);
             }, 500);
           } else {
             setPhase('focus');
-            setSeconds(FOCUS_SECS);
+            setSeconds(focusSecs);
           }
           return 0;
         }
@@ -74,7 +85,7 @@ export function useTimer({ userEmail, goals, onSessionComplete, recordSession })
       });
     }, 1000);
     return () => clearInterval(intervalRef.current);
-  }, [isRunning, phase, userEmail, breakDuration, goals?.remind, onSessionComplete, recordSession]);
+  }, [isRunning, phase, userEmail, breakSecs, focusSecs, goals?.remind, onSessionComplete, recordSession]);
 
-  return { seconds, isRunning, phase, progress, ringOffset, totalSeconds, start, pause, reset, skip };
+  return { preset, setPreset, seconds, isRunning, phase, progress, ringOffset, totalSeconds, start, pause, reset, skip };
 }

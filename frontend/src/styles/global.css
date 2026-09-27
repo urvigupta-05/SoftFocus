@@ -1,44 +1,45 @@
 /* ══════════════════════════════════════════
-   DESIGN TOKENS
+   DESIGN TOKENS — WARM IT GIRL DESK AESTHETIC
 ══════════════════════════════════════════ */
 :root {
-  --cream: #faf8f5;
-  --cream2: #f3efe9;
-  --cream3: #ece6dc;
-  --stone: #e4ddd2;
-  --stone2: #d6cdc0;
-  --ink: #1e1b17;
-  --ink2: #3d3830;
-  --ink3: #6b6358;
-  --muted: #9e9488;
-  --faint: #c4bdb4;
+  --cream: #f4efe6;
+  --cream2: #eae3d5;
+  --cream3: #ded5c2;
+  --stone: #e2d9c7;
+  --stone2: #d4c9b3;
+  --ink: #2b251d;
+  --ink2: #453c30;
+  --ink3: #6b6051;
+  --muted: #82786a;
+  --faint: #b3a896;
 
-  --sage: #7a9e8e;
-  --sage-soft: #d6e8e0;
-  --sage-glow: #edf5f1;
-  --amber: #c4893a;
-  --amber-soft: #f0dfc0;
-  --amber-glow: #fdf5e8;
-  --rose: #b87070;
-  --rose-soft: #f0d8d8;
-  --rose-glow: #fdf0f0;
-  --lavender: #8878a8;
-  --lav-soft: #e0d8f0;
-  --lav-glow: #f4f0fb;
+  --sage: #739686;
+  --sage-soft: #d8e8e0;
+  --sage-glow: #f0f7f3;
+  --amber: #c47c2b;
+  --amber-soft: #f2dec4;
+  --amber-glow: #fcf5eb;
+  --rose: #ba6666;
+  --rose-soft: #f4dcdc;
+  --rose-glow: #fcf0f0;
+  --lavender: #8674a6;
+  --lav-soft: #e2daef;
+  --lav-glow: #f6f2fb;
 
   --ff-display: 'Playfair Display', Georgia, serif;
+  --ff-hand: 'Caveat', 'Gochi Hand', cursive;
   --ff-body: 'Figtree', system-ui, sans-serif;
 
   --r8: 8px;
   --r12: 12px;
   --r16: 16px;
-  --r24: 24px;
-  --r32: 32px;
+  --r24: 20px;
+  --r32: 28px;
 
-  --sh-xs: 0 1px 4px rgba(30, 27, 23, 0.06);
-  --sh-sm: 0 2px 12px rgba(30, 27, 23, 0.08);
-  --sh-md: 0 6px 28px rgba(30, 27, 23, 0.10);
-  --sh-lg: 0 16px 56px rgba(30, 27, 23, 0.13);
+  --sh-xs: 0 1px 3px rgba(45, 37, 28, 0.05);
+  --sh-sm: 0 3px 12px rgba(45, 37, 28, 0.07);
+  --sh-md: 0 8px 24px rgba(45, 37, 28, 0.09);
+  --sh-lg: 0 16px 48px rgba(45, 37, 28, 0.12);
 
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -53,6 +54,9 @@ html, body {
   height: 100%;
   font-family: var(--ff-body);
   background: var(--cream);
+  background-image: 
+    radial-gradient(circle at 10% 15%, rgba(196, 124, 43, 0.06) 0%, transparent 35%),
+    radial-gradient(circle at 90% 85%, rgba(115, 150, 134, 0.07) 0%, transparent 35%);
   color: var(--ink);
   overflow: hidden;
 }

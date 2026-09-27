@@ -24,8 +24,18 @@ const cors      = require('cors');
 const mongoose  = require('mongoose');
 const bcrypt    = require('bcryptjs');
 const jwt       = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 
 const { User, Session, Heatmap } = require('./models');
+
+// Configure Gmail Transporter
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
+});
 const auth       = require('./authMiddleware');
 const { calcStreak } = require('./streakUtils');
 
@@ -75,46 +85,124 @@ async function getOrCreateHeatmap(userId) {
 // AUTH ROUTES
 // ═════════════════════════════════════════════════════════════════════════════
 
-// POST /api/auth/signup
+// POST /api/auth/signup - Step 1: Send verification code to Gmail
 app.post('/api/auth/signup', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { email, password } = req.body;
 
-    // Basic validation
-    if (!name || !name.trim())                         return res.status(400).json({ field: 'name',     error: 'Name is required.' });
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ field: 'email',    error: 'Valid email is required.' });
-    if (!password || password.length < 6)              return res.status(400).json({ field: 'password', error: 'Password must be at least 6 characters.' });
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ field: 'email', error: 'Valid email is required.' });
+    }
+    if (!password || password.length < 6) {
+      return res.status(400).json({ field: 'password', error: 'Password must be at least 6 characters.' });
+    }
 
-    // Check for existing account
     const existing = await User.findOne({ email: email.toLowerCase() });
-    if (existing) return res.status(409).json({ field: 'email', error: 'An account with this email already exists.' });
+    if (existing && existing.isVerified) {
+      return res.status(409).json({ field: 'email', error: 'An account with this email already exists.' });
+    }
 
-    // Hash password
+    // Generate 6-digit verification code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+
     const saltRounds = 12;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
-    // Create user
-    const user = await User.create({
-      name: name.trim(),
-      email: email.toLowerCase(),
-      passwordHash,
+    if (existing && !existing.isVerified) {
+      existing.passwordHash = passwordHash;
+      existing.verificationCode = verificationCode;
+      existing.verificationCodeExpires = verificationCodeExpires;
+      await existing.save();
+    } else {
+      await User.create({
+        email: email.toLowerCase(),
+        passwordHash,
+        isVerified: false,
+        verificationCode,
+        verificationCodeExpires,
+      });
+    }
+
+    // Send email via Gmail SMTP
+    try {
+      await transporter.sendMail({
+        from: `"SoftFocus Verification" <${process.env.GMAIL_USER}>`,
+        to: email.toLowerCase(),
+        subject: 'Your SoftFocus Verification Code ☕',
+        html: `
+          <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; border: 1px solid #e0d8cb; border-radius: 12px; background: #fffdfa;">
+            <h2 style="color: #2b251d; margin-bottom: 8px;">Verify Your Email</h2>
+            <p style="color: #665d52; font-size: 14px;">Welcome to SoftFocus! Use the verification code below to complete your registration:</p>
+            <div style="text-align: center; margin: 24px 0;">
+              <span style="font-size: 32px; font-weight: 700; letter-spacing: 6px; color: #c47c2b; background: #f7efe2; padding: 12px 24px; border-radius: 8px; display: inline-block;">${verificationCode}</span>
+            </div>
+            <p style="color: #998e80; font-size: 12px; text-align: center;">This code will expire in 10 minutes.</p>
+          </div>
+        `,
+      });
+    } catch (mailErr) {
+      console.error('❌ SMTP Mail send error:', mailErr);
+      return res.status(500).json({ field: 'email', error: `Failed to send email (${mailErr.message}). Check Gmail credentials.` });
+    }
+
+    res.status(200).json({
+      ok: true,
+      message: 'Verification code sent to your email address.',
+      verificationCodeNeeded: true,
     });
+  } catch (err) {
+    console.error('Signup error:', err);
+    res.status(500).json({ error: 'Server error during signup.' });
+  }
+});
+
+// POST /api/auth/verify-code - Step 2: Confirm code and activate account
+app.post('/api/auth/verify-code', async (req, res) => {
+  try {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+      return res.status(400).json({ error: 'Email and verification code are required.' });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(404).json({ error: 'Account not found.' });
+    }
+
+    if (user.isVerified) {
+      const token = signToken(user);
+      return res.json({ token, user });
+    }
+
+    if (user.verificationCode !== code.trim()) {
+      return res.status(400).json({ field: 'code', error: 'Invalid verification code.' });
+    }
+
+    if (user.verificationCodeExpires && new Date() > user.verificationCodeExpires) {
+      return res.status(400).json({ field: 'code', error: 'Verification code has expired. Please sign up again.' });
+    }
+
+    user.isVerified = true;
+    user.verificationCode = null;
+    user.verificationCodeExpires = null;
+    await user.save();
 
     const token = signToken(user);
 
-    res.status(201).json({
+    res.json({
       token,
       user: {
         id:    user._id,
-        name:  user.name,
         email: user.email,
         goals: user.goals,
         onboardingComplete: user.onboardingComplete,
       },
     });
   } catch (err) {
-    console.error('Signup error:', err);
-    res.status(500).json({ error: 'Server error during signup.' });
+    console.error('Verify code error:', err);
+    res.status(500).json({ error: 'Server error during verification.' });
   }
 });
 

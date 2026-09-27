@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
+import journalStickerImg from '../assets/journal_sticker.jpg';
 import '../styles/notes.css';
 
 // ── Tag definitions ──────────────────────────────────────────────────────────
@@ -387,6 +388,15 @@ export default function NotesPage() {
     <div className="notes-page">
       {/* Sidebar */}
       <div className="notes-sidebar">
+        {/* Cute Journal Banner Badge */}
+        <div className="cozy-journal-banner">
+          <img src={journalStickerImg} alt="Study Journal" className="journal-banner-img" />
+          <div className="journal-banner-info">
+            <span className="jbi-title">Study Debrief 📖</span>
+            <span className="jbi-sub">Organize thoughts &amp; goals</span>
+          </div>
+        </div>
+
         <div className="notes-sidebar-header">
           <div className="notes-sidebar-title">Notes &amp; tasks</div>
           <button className="btn-new-note" onClick={createNewNote}>

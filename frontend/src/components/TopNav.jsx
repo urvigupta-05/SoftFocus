@@ -1,10 +1,35 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
+import lofiCatImg from '../assets/lofi_cat.jpg';
+import journalStickerImg from '../assets/journal_sticker.jpg';
+import studyRoomBg from '../assets/study_room.jpg';
 
-export default function TopNav({ onOpenGoals }) {
+const GREETINGS_LIST = [
+  'Hey, {name} ✨',
+  'Welcome back, {name} 🌸',
+  'Good day, {name} ☕',
+  'Focus mode, {name} ⏱️',
+  'Creating magic, {name} 🧸',
+  'Soft & disciplined, {name} 🌿',
+  'Sanctuary time, {name} 🕯️',
+];
+
+const BRAND_IMAGES = {
+  cat: lofiCatImg,
+  journal: journalStickerImg,
+  room: studyRoomBg,
+};
+
+export default function TopNav() {
   const { user, currentPage, setCurrentPage, logout } = useApp();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+
+  // Pick a random greeting style once when topnav mounts
+  const randomGreetingTemplate = useMemo(() => {
+    const idx = Math.floor(Math.random() * GREETINGS_LIST.length);
+    return GREETINGS_LIST[idx];
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -47,23 +72,44 @@ export default function TopNav({ onOpenGoals }) {
         </svg>
       ),
     },
+    {
+      id: 'profile',
+      label: 'Profile',
+      icon: (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        </svg>
+      ),
+    },
   ];
 
-  const initial = (user?.name || '?')[0].toUpperCase();
+  // User display name & fallback initial
+  const displayName = (user?.name && user.name.trim())
+    ? user.name.trim()
+    : (user?.email ? user.email.split('@')[0] : 'Friend');
+
+  const initial = displayName[0].toUpperCase();
+  const greetingText = randomGreetingTemplate.replace('{name}', displayName);
+
+  // Brand Mark: Icon vs Image (NO container box around it!)
+  const markType = user?.brandMarkType || 'icon';
+  const markVal  = user?.brandMarkVal || '☁️';
 
   return (
     <nav className="topnav">
-      {/* Brand */}
-      <div className="topnav-brand">
-        <div className="topnav-mark">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/>
-          </svg>
-        </div>
-        <span className="topnav-name">SoftFocus</span>
+      {/* Brand & Personal Greeting (NO bounding box!) */}
+      <div className="topnav-brand" onClick={() => setCurrentPage('profile')} style={{ cursor: 'pointer' }}>
+        <span className="topnav-brand-mark">
+          {markType === 'image' && BRAND_IMAGES[markVal] ? (
+            <img src={BRAND_IMAGES[markVal]} className="topnav-brand-img" alt="Cute Sticker" />
+          ) : (
+            <span className="topnav-brand-symbol">{markVal}</span>
+          )}
+        </span>
+        <span className="topnav-name custom-greeting">{greetingText}</span>
       </div>
 
-      {/* Page nav */}
+      {/* Page Navigation */}
       <div className="topnav-nav">
         {navItems.map(item => (
           <button
@@ -77,29 +123,22 @@ export default function TopNav({ onOpenGoals }) {
         ))}
       </div>
 
-      {/* Right: user */}
+      {/* Right User Avatar Dropdown */}
       <div className="topnav-right" ref={dropdownRef}>
         <div className="user-pill" onClick={() => setDropdownOpen(o => !o)}>
           <div className="user-avatar">{initial}</div>
-          <span className="user-name">{user?.name}</span>
+          <span className="user-name">{displayName}</span>
           <svg className="chevron-down" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="6,9 12,15 18,9"/>
           </svg>
         </div>
 
         <div className={`user-dropdown ${dropdownOpen ? 'open' : ''}`}>
-          <div className="ud-item">
+          <div className="ud-item" onClick={() => { setDropdownOpen(false); setCurrentPage('profile'); }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
             </svg>
-            Profile
-          </div>
-          <div className="ud-item" onClick={() => { setDropdownOpen(false); onOpenGoals(); }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg>
-            Goals &amp; settings
+            Profile &amp; Settings
           </div>
           <div className="ud-sep" />
           <div className="ud-item danger" onClick={() => { setDropdownOpen(false); logout(); }}>

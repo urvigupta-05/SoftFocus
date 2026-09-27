@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 
 import AuthPage       from './pages/AuthPage';
@@ -6,29 +6,30 @@ import OnboardingPage from './pages/OnboardingPage';
 import DashboardPage  from './pages/DashboardPage';
 import TimerPage      from './pages/TimerPage';
 import NotesPage      from './pages/NotesPage';
+import ProfilePage    from './pages/ProfilePage';
 
 import TopNav      from './components/TopNav';
-import GoalsModal  from './components/GoalsModal';
 import Toast       from './components/Toast';
 
 import './styles/layout.css';
 import './styles/onboarding.css';
+import './styles/profile.css';
 
 // ── Inner app: only rendered when screen === 'app' ───────────────────────────
 function MainApp() {
   const { currentPage, setCurrentPage, toast } = useApp();
-  const [goalsOpen, setGoalsOpen] = useState(false);
 
   return (
     <div className="app-screen">
-      <TopNav onOpenGoals={() => setGoalsOpen(true)} />
+      <TopNav />
 
       <div className="app-content">
         {/* Dashboard */}
         <div className={`app-page ${currentPage === 'dashboard' ? 'active' : ''}`}>
           <DashboardPage
-            onOpenGoals={() => setGoalsOpen(true)}
+            onOpenGoals={() => setCurrentPage('profile')}
             onGoToTimer={() => setCurrentPage('timer')}
+            onGoToNotes={() => setCurrentPage('notes')}
           />
         </div>
 
@@ -41,9 +42,13 @@ function MainApp() {
         <div className={`app-page ${currentPage === 'notes' ? 'active' : ''}`}>
           <NotesPage onGoToTimer={() => setCurrentPage('timer')} />
         </div>
+
+        {/* Profile */}
+        <div className={`app-page ${currentPage === 'profile' ? 'active' : ''}`}>
+          <ProfilePage />
+        </div>
       </div>
 
-      <GoalsModal open={goalsOpen} onClose={() => setGoalsOpen(false)} />
       <Toast message={toast.message} show={toast.show} />
     </div>
   );

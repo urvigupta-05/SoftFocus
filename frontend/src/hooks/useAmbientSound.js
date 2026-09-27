@@ -1,10 +1,14 @@
 import { useRef, useCallback } from 'react';
 
 const SOUND_CONFIGS = {
-  rain:   { type: 'highpass', freq: 900, Q: 1   },
-  cafe:   { type: 'bandpass', freq: 400, Q: 0.5 },
-  forest: { type: 'lowpass',  freq: 600, Q: 1   },
-  waves:  { type: 'lowpass',  freq: 250, Q: 0.3 },
+  rain:         { type: 'highpass', freq: 900, Q: 1   },
+  cafe:         { type: 'bandpass', freq: 400, Q: 0.5 },
+  forest:       { type: 'lowpass',  freq: 600, Q: 1   },
+  waves:        { type: 'lowpass',  freq: 250, Q: 0.3 },
+  fireplace:    { type: 'bandpass', freq: 320, Q: 1.2 },
+  white_noise:  { type: 'lowpass',  freq: 1200, Q: 0.1 },
+  piano:        { type: 'bandpass', freq: 520, Q: 1.5 },
+  night_crickets:{ type: 'highpass', freq: 3500, Q: 2.0 },
 };
 
 export function useAmbientSound() {
