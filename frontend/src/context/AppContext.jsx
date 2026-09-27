@@ -210,17 +210,15 @@ export function AppProvider({ children }) {
     // localStorage fallback
     const users = getUsers();
     if (users[email]) {
-      return { ok: false, field: 'email', msg: 'An account with this email already exists. Please log in.' };
+      if (users[email].verified) {
+        return { ok: false, field: 'email', msg: 'An account with this email already exists. Please log in.' };
+      }
     }
-    const devCode = '123456';
-    users[email] = { email, pass: btoa(password), code: devCode, verified: true, goals: { daily: 4, weekly: 10, remind: 'gentle' } };
+    const devCode = Math.floor(100000 + Math.random() * 900000).toString();
+    users[email] = { email, pass: btoa(password), code: devCode, verified: false, goals: { daily: 4, weekly: 10, remind: 'gentle' } };
     saveUsers(users);
-    const u = { name: email.split('@')[0], email };
-    setUser(u);
-    setGoalsState(users[email].goals);
-    setPSession(u);
-    setScreen('onboarding');
-    return { ok: true, verificationCodeNeeded: false, devCode };
+    console.log(`[LOCAL DEV MODE] Verification code for ${email} is: ${devCode}`);
+    return { ok: true, verificationCodeNeeded: true, devCode };
   }, []);
 
   const verifyCode = useCallback(async (email, code) => {
@@ -249,10 +247,14 @@ export function AppProvider({ children }) {
     // localStorage fallback
     const users = getUsers();
     const ud = users[email];
-    if (!ud) return { ok: false, field: 'code', msg: 'Account not found.' };
+    if (!ud) return { ok: false, field: 'code', msg: 'No pending registration found for this email.' };
+    if (ud.code && ud.code !== code.trim()) {
+      return { ok: false, field: 'code', msg: 'Invalid verification code.' };
+    }
     ud.verified = true;
+    ud.code = null;
     saveUsers(users);
-    const u = { email };
+    const u = { name: email.split('@')[0], email };
     setUser(u);
     setGoalsState(ud.goals || { daily: 4, weekly: 10, remind: 'gentle' });
     setPSession(u);
