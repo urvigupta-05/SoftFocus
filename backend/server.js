@@ -134,7 +134,8 @@ app.post('/api/auth/signup', async (req, res) => {
 
     // Send email via Gmail SMTP
     try {
-      await transporter.sendMail({
+      console.log(`[SMTP] Attempting to send OTP email to: ${email.toLowerCase()}`);
+      const mailInfo = await transporter.sendMail({
         from: `"SoftFocus Verification" <${process.env.GMAIL_USER}>`,
         to: email.toLowerCase(),
         subject: 'Your SoftFocus Verification Code ☕',
@@ -149,6 +150,7 @@ app.post('/api/auth/signup', async (req, res) => {
           </div>
         `,
       });
+      console.log(`[SMTP SUCCESS] Verification email sent to ${email.toLowerCase()}:`, mailInfo.response);
     } catch (mailErr) {
       console.error('❌ SMTP Mail send error:', mailErr);
       return res.status(500).json({ field: 'email', error: `Failed to send verification email (${mailErr.message}).` });
