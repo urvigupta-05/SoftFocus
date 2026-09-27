@@ -209,6 +209,9 @@ export function AppProvider({ children }) {
 
     // localStorage fallback
     const users = getUsers();
+    if (users[email]) {
+      return { ok: false, field: 'email', msg: 'An account with this email already exists. Please log in.' };
+    }
     const devCode = '123456';
     users[email] = { email, pass: btoa(password), code: devCode, verified: true, goals: { daily: 4, weekly: 10, remind: 'gentle' } };
     saveUsers(users);
