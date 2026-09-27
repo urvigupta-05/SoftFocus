@@ -12,7 +12,7 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 const AppContext = createContext(null);
 
 // ── Config ────────────────────────────────────────────────────────────────────
-const API_BASE = process.env.REACT_APP_API_URL || ''; // e.g. 'http://localhost:5001'
+const API_BASE = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5001' : '');
 const USE_API  = Boolean(API_BASE);
 
 // ── API helper ────────────────────────────────────────────────────────────────
