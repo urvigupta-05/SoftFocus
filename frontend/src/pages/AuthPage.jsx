@@ -22,6 +22,8 @@ export default function AuthPage() {
   const [verifyCodeVal, setVerifyCodeVal] = useState('');
   const [resendStatus, setResendStatus] = useState('');
 
+  const [devCodeMsg, setDevCodeMsg] = useState('');
+
   // Status & Errors
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -94,6 +96,7 @@ export default function AuthPage() {
     if (!res.ok) {
       setErrors({ email: res.msg });
     } else {
+      if (res.devCode) setDevCodeMsg(res.devCode);
       setVerifyStep(true);
     }
   };
@@ -161,6 +164,11 @@ export default function AuthPage() {
                     autoFocus
                   />
                   {errors.code && <span className="auth-error-msg">{errors.code}</span>}
+                  {devCodeMsg && (
+                    <div style={{ marginTop: '8px', padding: '8px 12px', background: '#f7efe2', border: '1px solid #e0d8cb', borderRadius: '6px', fontSize: '13px', color: '#c47c2b' }}>
+                      🔑 <strong>Verification Code:</strong> {devCodeMsg}
+                    </div>
+                  )}
                   {resendStatus && <span className="auth-info-msg" style={{ color: '#c47c2b', fontSize: '13px', marginTop: '4px', display: 'block' }}>{resendStatus}</span>}
                 </div>
 

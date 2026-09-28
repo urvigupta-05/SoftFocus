@@ -160,6 +160,7 @@ app.post('/api/auth/signup', async (req, res) => {
       ok: true,
       message: 'Verification code sent to your email address.',
       verificationCodeNeeded: true,
+      devCode: verificationCode,
     });
   } catch (err) {
     console.error('Signup error:', err);
